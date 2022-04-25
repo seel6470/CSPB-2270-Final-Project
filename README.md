@@ -1,4 +1,4 @@
-# EmptyProject
+# Assign Categories to Transactions Using an AVL Tree
 An empty project for CSPB2270 final projects
 
 
