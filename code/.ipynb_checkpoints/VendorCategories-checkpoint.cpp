@@ -29,16 +29,17 @@ string VendorCategories::GetCategoryPath(){
 }
 
 vector<vector<string>> CSVToVector(string file_path){
+  //vector of string vectors to contain 2D array with all csv data
+  vector<vector<string>> data;
   //ifstream = class to open file streams (specifically input)
   ifstream file_in;
   //open csv in filestream
   file_in.open(file_path);
   //out parameter where the output for each line will be stored;
+  
   string out_string;
   //vector to contain each cell in a single row
   vector<string> line;
-  //vector of string vectors to contain 2D array with all csv data
-  vector<vector<string>> data;
   //while there is a valid line in stream
   while (getline(file_in, out_string)) {
     //convert to istringstream to pass the string to stream
@@ -89,6 +90,9 @@ void overwriteCSV(string file_path, vector<vector<string>> data){
 shared_ptr<vendor_cat> VendorCategories::BuildAVL(string vendor_categories_filepath){
   //convert to 2D vector to convert each row to a node
   vector<vector<string>> data = CSVToVector(vendor_categories_filepath);
+  if (data.size() == 0){
+    return NULL;
+  }
   shared_ptr<vendor_cat> ret;
   //iterate through data and create AVL tree
   for (unsigned int i = 0; i < data.size() - 1; i++){
@@ -211,16 +215,16 @@ void VendorCategories::PrintAVL(shared_ptr<vendor_cat> root) {
 void VendorCategories::PrintCSV(string file_path){
   cout << "printing csv located at " << file_path << endl;
   //convert csv to vector
-  vector<vector<string>> data(CSVtoVector(file_path));
-  data.push_back(line);
+  vector<vector<string>> data(CSVToVector(file_path));
   for (unsigned int i = 0; i < data.size(); i++){
     for (unsigned int j = 0; j < data.at(i).size(); j++){
       cout << data.at(i).at(j);
       if (j < data.at(i).size() - 1){
         cout << ", ";
+      }else{
+        cout << "\n";
       }
     }
-    cout << "\n";
   }
 }
 
@@ -234,7 +238,7 @@ bool VendorCategories::AVLInsert(shared_ptr<vendor_cat>& root, shared_ptr<vendor
   }
   shared_ptr<vendor_cat> cur(root);
   //as long as cur exists
-  while (cur != NULL){
+  while (cur){
     //if less than, go left
     if (node->name < cur->name){
       //if NULL, place is found

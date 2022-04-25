@@ -22,7 +22,7 @@ int main(){
   shared_ptr<vendor_cat> tree(newVendor.BuildAVL(category));
   //newVendor.PrintCSV(statement);
   //newVendor.PrintCSV(category);
-  //newVendor.RemoveCategories(statement);
+  newVendor.RemoveCategories(statement);
   newVendor.AssignCategories(statement, tree);
   //string cell = "\"PURCHASE AUTHORIZED ON 04/16 CITY MARKET 444 2600 NORT GRAND JUNCTIO CO P462107090484175 CARD 1003\"";
   //cout << cell << endl;
