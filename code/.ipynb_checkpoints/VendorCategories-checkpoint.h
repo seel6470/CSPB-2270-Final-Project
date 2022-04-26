@@ -11,6 +11,8 @@ struct vendor_cat {
   string category;
   shared_ptr<vendor_cat> left;
   shared_ptr<vendor_cat> right;
+  //default height to 0
+  int height = 0;
 };
 
 
@@ -51,10 +53,12 @@ public:
   //Will return “False” if errors are encountered (e.g. filepath not csv or nonexistent)
   bool RemoveCategories(string statement_filepath);
   
-  //will use iostream to print the AVL tree
-  void PrintAVLRecursive(shared_ptr<vendor_cat> root);
-  
+  //Will print the contents of the AVL tree starting at root to the console
+  //using DOT language to be visualized with Graphviz (http://webgraphviz.com)
   void PrintAVL(shared_ptr<vendor_cat> root);
+  //recursive call to print each node
+  void PrintAVLRecursive(shared_ptr<vendor_cat> root);
+
   //will print the csv file for debugging
   void PrintCSV(string file_path);
     
@@ -62,23 +66,23 @@ private:
   //This function will insert a vendor_cat node into the avl_tree private member variable 
   //following BST insert traversal and AVL self-balancing along the way. Will be used in the CreateAVL public function.
   //Will use the vendor_name string of vendor_cat node as the key during traversal
-  //Will return “True” if node is successfully inserted
-  //Will return “False” if errors are encountered 
-  bool AVLInsert(shared_ptr<vendor_cat>& root, shared_ptr<vendor_cat> node);
+  //recursive function to be able to set height on exit of each recursive call
+  shared_ptr<vendor_cat> AVLInsert(shared_ptr<vendor_cat> node, shared_ptr<vendor_cat> root);
+  
+  //rotation helper functions that will be called according to the balance_factor value
+  //if absolute value of balance factor is > 1
+  shared_ptr<vendor_cat> RotateRight(shared_ptr<vendor_cat> node);
+  shared_ptr<vendor_cat> RotateLeft(shared_ptr<vendor_cat> node);
+
+  
   
   //This function will search the AVL tree using bst search traversal using the vendor_name as the key
   //If a match is found the vendor_cat node is returned, else NULL is returned
   shared_ptr<vendor_cat> AVLSearch(shared_ptr<vendor_cat> root, string vendor_name);
   
-  //This function will be used in the AVLInsert function to make sure the tree is balanced according to the AVL rules
-  //This is the biggest part of this project since it is the main difference of BST
-  void BalanceAVL(shared_ptr<vendor_cat> root);
-  
-  int TreeHeight(shared_ptr<vendor_cat> root, int cur_height = 0, int max_height = 0);
-  
+  //private member values storing the filepaths for the statement and categories csv files
   string statement_csv;
   string categories_csv;
-  shared_ptr<vendor_cat> avl_root_;
 };
 
 #endif // VENDOR_CAT__

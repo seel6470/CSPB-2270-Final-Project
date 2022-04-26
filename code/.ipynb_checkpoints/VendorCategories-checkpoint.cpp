@@ -100,7 +100,7 @@ shared_ptr<vendor_cat> VendorCategories::BuildAVL(string vendor_categories_filep
     shared_ptr<vendor_cat> node(new vendor_cat);
     node->name = data.at(i).at(0);
     node->category = data.at(i).at(1);
-    AVLInsert(ret, node);
+    ret = AVLInsert(node, ret);
     //AVLBalance here, or in insert?
   }
   //uncomment to debug AVL tree, especially self-balancing properties
@@ -138,17 +138,11 @@ bool VendorCategories::AssignCategories(string statement_filepath, shared_ptr<ve
         key = "\"";
         key += vendor;
         key += "\"";
-        //add parsed vendor to end of row
-        data.at(i).push_back(key);
       }
       //find a match in AVL tree
       shared_ptr<vendor_cat> node_match(AVLSearch(root, key));
       if (node_match){
-        if (!matched){
-          //if match is found but no new vendor was added, add a blank cell so all categories are in same column
-          data.at(i).push_back("");
-        }
-        //add 
+        //if match was found, add category to end of row
         data.at(i).push_back(node_match->category);
       }
     }
@@ -176,6 +170,9 @@ void VendorCategories::PrintAVLRecursive(shared_ptr<vendor_cat> root){
   //static variable to keep track of how many null nodes there are
   //this is important to ensure unique qualities of each null node
   static int null_count = 0;
+  if (!root){
+    return;
+  }
   if (root->left){
     cout << "    " << root->name << " -> " << root->left->name << ";" << endl;
     //recursive left
@@ -209,7 +206,6 @@ void VendorCategories::PrintAVL(shared_ptr<vendor_cat> root) {
   //recursive call to traverse tree
   PrintAVLRecursive(root);
   cout << "}" << endl;
-  
 };
 
 void VendorCategories::PrintCSV(string file_path){
@@ -228,54 +224,139 @@ void VendorCategories::PrintCSV(string file_path){
   }
 }
 
+void setHeight(shared_ptr<vendor_cat> node){
+  int height = 0;
+  if (!node){
+    //no height to set
+    return;
+  }
+  if (node->left && node->left->height > height){
+    height = node->left->height;
+  }
+  if (node->right && node->right->height > height){
+    height = node->right->height;
+  }
+  node->height = height + 1;
+}
+
+shared_ptr<vendor_cat> VendorCategories::RotateRight(shared_ptr<vendor_cat> node){
+  if (!node->left){
+    //if there is no left node, should not rotate
+    return node;
+  }
+  //going to take the place of node to be rotated
+  shared_ptr<vendor_cat> old_left(node->left);
+  //currently right of left node, going to be left of node to be rotated after it has been replaced
+  shared_ptr<vendor_cat> old_left_right(node->left->right);
+  old_left->right = node;
+  node->left = old_left_right;
+  //set heights
+  setHeight(old_left);
+  setHeight(old_left_right);
+  return old_left;
+}
+
+shared_ptr<vendor_cat> VendorCategories::RotateLeft(shared_ptr<vendor_cat> node){
+  if (!node->right){
+    //if there is no right, should not rotate
+    return node;
+  }
+  //going to take the place of node to be rotated
+  shared_ptr<vendor_cat> old_right(node->right);
+  //currently left of right node, going to be right of node to be rotated after it has been replaced 
+  shared_ptr<vendor_cat> old_right_left(node->right->left);
+  old_right->left = node;
+  node->right = old_right_left;
+  //set heights
+  setHeight(old_right);
+  setHeight(old_right_left);
+  return old_right;
+}
+
 
 //private member functions
-bool VendorCategories::AVLInsert(shared_ptr<vendor_cat>& root, shared_ptr<vendor_cat> node){
+shared_ptr<vendor_cat> VendorCategories::AVLInsert(shared_ptr<vendor_cat> node, shared_ptr<vendor_cat> root){
   if (!root){
-    //if there is no pre-existing root, make one
+    //base case, will work with root node, as well as all leaf nodes
     root = node;
-    return true;
   }
-  shared_ptr<vendor_cat> cur(root);
-  //as long as cur exists
-  while (cur){
-    //if less than, go left
-    if (node->name < cur->name){
-      //if NULL, place is found
-      if (cur->left == NULL){
-        cur->left = node;
-        return true;
-      }
-      cur = cur->left;
-    }else{
-      if (cur->right == NULL){
-        cur->right = node;
-        return true;
-      }
-      cur = cur->right;
+  //traverse like a normal BST
+  if (node->name < root->name){
+    root->left = AVLInsert(node, root->left);
+  }else if (node->name > root->name){
+    root->right = AVLInsert(node, root->right);
+  //no duplicates allowed
+  }else if (node->name == root->name){
+    return root;
+  }
+  
+  //calculate balance factor using height of children
+  int balance_factor = 0;
+  setHeight(root);
+  if (root->left){
+    //left balances are negative
+    balance_factor -= root->left->height;
+  }else{
+    //null left subtree counts toward right height
+    balance_factor++;
+  }
+  if (root->right){
+    //right balances are positive
+    balance_factor += root->right->height;
+  }else{
+    //null right subtree counts toward left height
+    balance_factor--;
+  }
+
+  //balance factor determines whether or not tree should be rebalanced
+  //balance factor > 1 or < -1 must be rebalanced
+  
+  //left subtree is longer than right
+  if (balance_factor < -1 && root->left){
+    //first case, left is longer and recursively called insert left then left
+    if (node->name < root->left->name){
+      //rotate right
+      return RotateRight(root);
+    //second case, left is longer and recursively called insert left then right
+    }else if (node->name > root->left->name){
+      //rotate left node left
+      root->left = RotateLeft(root->left);
+      //rotate right
+      return RotateRight(root);
     }
   }
-  //call AVLBalance after adding node (possibly in 
-  cout << "something went wrong in AVLInsert" << endl;
-  return false;
+  
+  //right subtree is longer than left
+  if (balance_factor > 1 && root->right){
+    //third case, right is longer and recursively called insert right then right
+    if (node->name > root->right->name){
+      //rotate left
+      return RotateLeft(root);
+    //second case, right is longer and recursively called insert right then left
+    }else if (node->name < root->right->name){
+      //rotate right node right
+      root->right = RotateRight(root->right);
+      //rotate left
+      return RotateLeft(root);
+    }
+  }
+  return root;
 }
 
 shared_ptr<vendor_cat> VendorCategories::AVLSearch(shared_ptr<vendor_cat> root, string vendor_name){
+  //normal BST search
   shared_ptr<vendor_cat> cur(root);
   while (cur){
     if (vendor_name == cur->name){
-      //cout << vendor_name << " == " << cur->name << endl;
       return cur;
     }
     if (vendor_name < cur->name){
-      //cout << vendor_name << " < " << cur->name << endl;
       if (cur->left){
         cur = cur->left;
       }else{
         return NULL;
       }
     }else{
-      //cout << vendor_name << ">" << cur->name << endl;
       if (cur->right){
         cur = cur->right;
       }else{
@@ -284,8 +365,4 @@ shared_ptr<vendor_cat> VendorCategories::AVLSearch(shared_ptr<vendor_cat> root, 
     }
   }
   return NULL;
-}
-
-void VendorCategories::BalanceAVL(shared_ptr<vendor_cat> root){
-  //bulk of work here
 }
