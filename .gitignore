@@ -3,4 +3,7 @@ build/*
 ipch
 
 # exception to the rule
-!build/.gitkeep 
+!build/.gitkeep
+!build/categories.csv
+!build/statement.csv
+!build/original_statement.csv
